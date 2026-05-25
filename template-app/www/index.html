@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+
+    <meta http-equiv="cache-control" content="max-age=200" />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+
+    <title>AquaOat</title>
+
+    <link
+        rel="stylesheet"
+        type="text/css"
+        href="animate.css"
+        media="screen"
+    />
+
+    <link
+        rel="stylesheet"
+        type="text/css"
+        href="global.css"
+        media="screen"
+    />
+
+    <script src="jquery.min.js"></script>
+
+    <script src="jquery.mobile.custom.min.js"></script>
+
+    <script src="jquery.touchSwipe.min.js"></script>
+</head>
+
+<body>
+
+    <div id="wrapper" rel="1">
+
+        <div class="menu">
+            <img src="menu.png" width="37" alt="" />
+        </div>
+
+        <div class="slide_arrow">
+
+            <div class="left_arrow">
+                <img
+                    src="left_arrow.png"
+                    alt="previous icon"
+                />
+            </div>
+
+            <div class="right_arrow">
+                <img
+                    src="right_arrow.png"
+                    alt="next icon"
+                />
+            </div>
+
+        </div>
+
+        <div id="main_content"></div>
+
+        <div class="reference active">
+
+            <div class="box">
+
+                <div class="slide_jumper">
+
+                    <div class="slides">
+                        <img src="thumbs/01.jpg" alt="" />
+                    </div>
+
+                    <div class="slides">
+                        <img src="thumbs/02.jpg" alt="" />
+                    </div>
+
+                    <div class="slides">
+                        <img src="thumbs/03.jpg" alt="" />
+                    </div>
+
+                    <div class="slides">
+                        <img src="thumbs/04.jpg" alt="" />
+                    </div>
+
+                    <div class="slides">
+                        <img src="thumbs/05.jpg" alt="" />
+                    </div>
+
+                    <div class="slides">
+                        <img src="thumbs/06.jpg" alt="" />
+                    </div>
+
+                    <div class="slides">
+                        <img src="thumbs/07.jpg" alt="" />
+                    </div>
+
+                    <div class="slides">
+                        <img src="thumbs/08.jpg" alt="" />
+                    </div>
+
+                    <div class="slides">
+                        <img src="thumbs/09.jpg" alt="" />
+                    </div>
+
+                    <div class="slides">
+                        <img src="thumbs/10.jpg" alt="" />
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="box_btn"></div>
+
+        </div>
+
+    </div>
+
+    <div id="myconsole"></div>
+
+    <div id="click_through"></div>
+
+    <script
+        src="global.js"
+        type="text/javascript"
+        language="javascript"
+    ></script>
+
+    <script>
+
+        // =========================
+        // SCALE APP
+        // =========================
+
+        function scaleApp() {
+
+            const baseWidth = 1024;
+            const baseHeight = 768;
+
+            const scaleX = window.innerWidth / baseWidth;
+            const scaleY = window.innerHeight / baseHeight;
+
+            const scale = Math.min(scaleX, scaleY);
+
+            const wrapper =
+                document.getElementById("wrapper");
+
+            if (!wrapper) return;
+
+            wrapper.style.transform =
+                `scale(${scale})`;
+
+            wrapper.style.left =
+                (
+                    window.innerWidth -
+                    baseWidth * scale
+                ) / 2 + "px";
+
+            wrapper.style.top =
+                (
+                    window.innerHeight -
+                    baseHeight * scale
+                ) / 2 + "px";
+        }
+
+        window.addEventListener(
+            "resize",
+            scaleApp
+        );
+
+        window.addEventListener(
+            "load",
+            scaleApp
+        );
+
+
+
+        // =========================
+        // PRELOAD ALL IMAGES
+        // =========================
+
+        function preloadAllImages() {
+
+            const imagePaths = [];
+
+            // PRELOAD SLIDES
+            for (let i = 1; i <= 10; i++) {
+
+                // slide1/1.jpg
+                imagePaths.push(
+    `slide${i}/1.jpg`
+);
+
+                // thumbs/01.jpg
+                imagePaths.push(
+                    `thumbs/${String(i).padStart(2, '0')}.jpg`
+                );
+            }
+
+            // PRELOAD UI IMAGES
+            imagePaths.push(
+                "left_arrow.png",
+                "right_arrow.png",
+                "open.png",
+                "close.png",
+                "menu.png"
+            );
+
+            // LOAD IMAGES
+            imagePaths.forEach((src) => {
+                const img = new Image();
+
+                // Avoid flicker/black flash during image swaps by ensuring the browser
+                // reserves the decoded pixels.
+                img.decoding = "async";
+
+                // Start download immediately
+                img.src = src;
+            });
+
+            console.log(
+                "All images preloaded"
+            );
+        }
+
+        window.addEventListener(
+            "load",
+            preloadAllImages
+        );
+
+
+
+        // =========================
+        // MAIN CONTENT
+        // =========================
+
+        $(document).ready(function () {
+
+            var selectedContentPath =
+                "slide1/";
+
+            $("#main_content").html(
+
+    `
+    <link
+        id="dynamic_slide_css"
+        rel="stylesheet"
+        type="text/css"
+        href="slide1/slide1.css"
+        media="screen"
+    />
+
+    <div class="background">
+
+        <img
+            id="main_slide_img"
+            src="slide1/1.jpg"
+            width="1024"
+            height="768"
+        >
+
+    </div>
+
+    <div class="title1 frameopen"></div>
+    `
+);
+        });
+
+    </script>
+
+</body>
+</html>
