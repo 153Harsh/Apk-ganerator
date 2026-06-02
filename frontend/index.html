@@ -89,6 +89,51 @@
     id="appName"
     placeholder="Enter App Name"
   />
+  <br><br>
+
+<label>Slide 1</label>
+<input type="file" id="slide1">
+
+<br><br>
+
+<label>Slide 2</label>
+<input type="file" id="slide2">
+
+<br><br>
+
+<label>Slide 3</label>
+<input type="file" id="slide3">
+
+<br><br>
+
+<label>Slide 4</label>
+<input type="file" id="slide4">
+
+<br><br>
+
+<label>Slide 5</label>
+<input type="file" id="slide5">
+
+<br><br>
+
+<label>Slide 6</label>
+<input type="file" id="slide6">
+<br><br>
+
+<label>Slide 7</label>
+<input type="file" id="slide7">
+<br><br>
+
+<label>Slide 8</label>
+<input type="file" id="slide8">
+<br><br>
+
+<label>Slide 9</label>
+<input type="file" id="slide9">
+<br><br>
+
+<label>Slide 10</label>
+<input type="file" id="slide10">
 
     <button
   type="button"
@@ -119,9 +164,7 @@
   <script>
 
 document
-  .getElementById(
-    'generateBtn'
-  )
+  .getElementById('generateBtn')
   .addEventListener(
     'click',
     generateApp
@@ -129,7 +172,7 @@ document
 
 async function generateApp(event) {
 
-  if (event && typeof event.preventDefault === 'function') {
+  if (event) {
     event.preventDefault();
   }
 
@@ -138,133 +181,160 @@ async function generateApp(event) {
       'appName'
     ).value.trim();
 
+  if (!appName) {
 
-      if (!appName) {
+    alert(
+      'Please Enter App Name'
+    );
 
-        alert(
-          'Please Enter App Name'
+    return;
+  }
+
+  const progressBar =
+    document.getElementById(
+      'progressBar'
+    );
+
+  const status =
+    document.getElementById(
+      'status'
+    );
+
+  const button =
+    document.getElementById(
+      'generateBtn'
+    );
+
+  button.disabled = true;
+
+  button.innerText =
+    'Generating...';
+
+  try {
+
+    const terminal =
+      document.getElementById(
+        'terminal'
+      );
+
+    terminal.innerHTML = '';
+
+    // CREATE FORMDATA
+    const formData =
+      new FormData();
+
+    formData.append(
+      'appName',
+      appName
+    );
+
+    // ADD SLIDE FILES
+    for (
+      let i = 1;
+      i <= 10;
+      i++
+    ) {
+
+      const file =
+        document.getElementById(
+          `slide${i}`
+        ).files[0];
+
+      if (file) {
+
+        formData.append(
+          `slide${i}`,
+          file
         );
 
-        return;
       }
 
-      const progressBar =
-        document.getElementById(
-          'progressBar'
-        );
-
-      const status =
-        document.getElementById(
-          'status'
-        );
-const button =
-  document.getElementById(
-    'generateBtn'
-  );
-
-button.disabled = true;
-
-button.innerText =
-  'Generating...';
-      try {
-        const terminal =
-  document.getElementById(
-    'terminal'
-  );
-
-terminal.innerHTML = '';
-        // API CALL
-        const response =
-          await fetch(
-            'https://cruciate-aria-overapprehensively.ngrok-free.dev/generate',
-            {
-              method: 'POST',
-
-              headers: {
-                'Content-Type':
-                  'application/json'
-              },
-
-              body: JSON.stringify({
-                appName
-              })
-            }
-          );
-
-
-        // CHECK ERROR
-        if (!response.ok) {
-
-          throw new Error(
-            'Build Failed'
-          );
-        }
-
-
-     // GET JSON
-const data =
-  await response.json();
-
-
-// COMPLETE
-
-
-progressBar.style.width =
-  '100%';
-
-status.innerText =
-  'APK Generated Successfully!';
-
-console.log(data);
-console.log(data.downloadUrl);
-// DOWNLOAD APK
-// AUTO DOWNLOAD APK
-window.location.href =
-  data.downloadUrl;
-
-
-
-// RESET UI
-setTimeout(() => {
-
-  progressBar.style.width =
-    '0%';
-
-  status.innerText =
-    'Ready For Next APK';
-
-  document.getElementById(
-    'appName'
-  ).value = '';
-button.disabled = false;
-
-button.innerText =
-  'Generate';
-}, 2000);
-
-
-      } catch (err) {
-
-        
-
-        progressBar.style.width =
-          '0%';
-
-        status.innerText =
-          'Build Failed ❌';
-button.disabled = false;
-
-button.innerText =
-  'Generate';
-      }
     }
 
+    const response =
+      await fetch(
+        'http://localhost:5000/generate',
+        {
+          method: 'POST',
+          body: formData
+        }
+      );
+
+    if (!response.ok) {
+
+      throw new Error(
+        'Build Failed'
+      );
+
+    }
+
+    const data =
+      await response.json();
+
+    progressBar.style.width =
+      '100%';
+
+    status.innerText =
+      'APK Generated Successfully!';
+
+    console.log(data);
+
+    if (data.downloadUrl) {
+
+      window.location.href =
+        data.downloadUrl;
+
+    }
+
+    setTimeout(() => {
+
+      progressBar.style.width =
+        '0%';
+
+      status.innerText =
+        'Ready For Next APK';
+
+      document.getElementById(
+        'appName'
+      ).value = '';
+
+      button.disabled = false;
+
+      button.innerText =
+        'Generate';
+
+    }, 2000);
+
+  } catch (err) {
+
+    console.error(err);
+
+    progressBar.style.width =
+      '0%';
+
+    status.innerText =
+      'Build Failed ❌';
+
+    button.disabled = false;
+
+    button.innerText =
+      'Generate';
+
+  }
+
+}
+
+
+// SOCKET
 
 const socket =
   io(
     'https://cruciate-aria-overapprehensively.ngrok-free.dev',
     {
-      transports: ['websocket', 'polling']
+      transports: [
+        'websocket',
+        'polling'
+      ]
     }
   );
 
@@ -283,6 +353,7 @@ socket.on(
 
     terminal.innerHTML +=
       '⚡ Connected To Server<br><br>';
+
   }
 );
 
@@ -290,21 +361,20 @@ socket.on(
   'terminal-log',
   (log) => {
 
-    console.log(
-      'LOG:',
-      log
-    );
-
     const terminal =
       document.getElementById(
         'terminal'
       );
 
     terminal.innerHTML +=
-      log.replace(/\n/g, '<br>');
+      log.replace(
+        /\n/g,
+        '<br>'
+      );
 
     terminal.scrollTop =
       terminal.scrollHeight;
+
   }
 );
 
@@ -321,9 +391,11 @@ socket.on(
 
     terminal.innerHTML +=
       '❌ Socket Connection Failed<br>';
+
   }
 );
-  </script>
+
+</script>
 
 </body>
 </html>

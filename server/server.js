@@ -1,6 +1,10 @@
+
+const multer = require('multer');
 const express = require('express');
 const cors = require('cors');
-
+const upload = multer({
+  dest: 'uploads/'
+});
 const {
   spawn
 } = require('child_process');
@@ -45,7 +49,21 @@ app.get('/', (req, res) => {
 // GENERATE APK API
 // =======================
 
-app.post('/generate', async (req, res) => {
+app.post(
+  '/generate',
+upload.fields([
+  { name: 'slide1', maxCount: 1 },
+  { name: 'slide2', maxCount: 1 },
+  { name: 'slide3', maxCount: 1 },
+  { name: 'slide4', maxCount: 1 },
+  { name: 'slide5', maxCount: 1 },
+  { name: 'slide6', maxCount: 1 },
+  { name: 'slide7', maxCount: 1 },
+  { name: 'slide8', maxCount: 1 },
+  { name: 'slide9', maxCount: 1 },
+  { name: 'slide10', maxCount: 1 }
+]),
+  async (req, res) => {
 
   try {
 
@@ -63,16 +81,70 @@ app.post('/generate', async (req, res) => {
       `🚀 Generating: ${appName}`
     );
 
-    io.emit(
-      'terminal-log',
-      `\n🚀 Generating: ${appName}\n`
+   io.emit(
+  'terminal-log',
+  `\n🚀 Generating: ${appName}\n`
+);
+
+// ADD THIS
+const projectPath =
+  path.join(
+    __dirname,
+    '../template-app'
+  );
+for (let i = 1; i <= 10; i++) {
+
+  const key = `slide${i}`;
+
+  if (req.files[key]) {
+
+    const uploadedFile =
+      req.files[key][0].path;
+
+    // REPLACE SLIDE IMAGE
+
+    const slideDestination =
+      path.join(
+        projectPath,
+        `www/slide${i}/1.jpg`
+      );
+
+    fs.copyFileSync(
+      uploadedFile,
+      slideDestination
     );
 
-    const projectPath =
+    // REPLACE THUMB IMAGE
+
+    const thumbNumber =
+      String(i).padStart(2, '0');
+
+    const thumbDestination =
       path.join(
-        __dirname,
-        '../template-app'
+        projectPath,
+        `www/thumbs/${thumbNumber}.jpg`
       );
+
+    fs.copyFileSync(
+      uploadedFile,
+      thumbDestination
+    );
+
+    console.log(
+      `✅ Replaced slide${i}`
+    );
+
+    console.log(
+      `✅ Replaced thumb ${thumbNumber}`
+    );
+
+  }
+
+}
+console.log(
+  'PROJECT PATH:',
+  projectPath
+);
 
 
     // =======================
@@ -376,6 +448,7 @@ app.get(
           __dirname,
           '../template-app'
         );
+
 
       const apkPath =
         path.join(

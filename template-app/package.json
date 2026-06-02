@@ -5,7 +5,7 @@
   "main": "global.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-     "brand": "node brand.js"
+    "brand": "node brand.js"
   },
   "keywords": [],
   "author": "",
@@ -15,6 +15,7 @@
     "@capacitor/android": "^8.3.4",
     "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.3.4",
+    "@capacitor/ios": "^8.3.4",
     "canvas": "^3.2.3"
   },
   "devDependencies": {
