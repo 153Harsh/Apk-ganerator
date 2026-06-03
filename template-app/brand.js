@@ -10,6 +10,9 @@ const fs = require('fs');
 const appName =
   process.argv[2] || 'AquaOat';
 
+const platform =
+  process.argv[3]?.toLowerCase();
+
 
 // ========================
 // PLATFORM CHECK
@@ -183,7 +186,7 @@ if (
 // WINDOWS → ANDROID ONLY
 // ========================
 
-if (isWindows) {
+if (platform === "android") {
 
   console.log(
     '🟢 WINDOWS DETECTED'
@@ -268,7 +271,7 @@ if (isWindows) {
 // MAC → IOS ONLY
 // ========================
 
-if (isMac) {
+if (platform === "ios") {
 
   console.log(
     '🍎 MAC DETECTED'

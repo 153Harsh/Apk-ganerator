@@ -1,6 +1,8 @@
 const multer = require("multer");
 const express = require("express");
 const archiver = require("archiver");
+console.log("ARCHIVER =", archiver);
+console.log("TYPE =", typeof archiver);
 const cors = require("cors");
 const upload = multer({
   dest: "uploads/",
@@ -13,6 +15,7 @@ function generateBuildId() {
     .substring(2, 10)
     .toUpperCase();
 }
+
 function zipDirectory(sourceDir, outPath) {
   return new Promise((resolve, reject) => {
     const output = fs.createWriteStream(outPath);
@@ -67,19 +70,6 @@ app.get("/", (req, res) => {
 // GENERATE APK API
 // =======================
 
-// if (!appName) {
-//   return res.status(400).json({
-//     error: "App Name Required",
-//   });
-// }
-
-// if (!platform) {
-//   return res.status(400).json({
-//     error: "Platform Required",
-//   });
-// }
-
-
 app.post(
   "/generate",
   upload.fields([
@@ -95,6 +85,10 @@ app.post(
     { name: "slide10", maxCount: 1 },
   ]),
   async (req, res) => {
+    console.log(
+    "REQUEST RECEIVED",
+    new Date().toISOString()
+  );
     try {
       const appName = req.body.appName?.trim();
       const platform = req.body.platform?.trim()?.toLowerCase();
@@ -109,13 +103,46 @@ app.post(
           error: "Platform Required",
         });
       }
-console.log(`🚀 Generating ${platform}: ${appName}`);
+      
+      console.log(`🚀 Generating ${platform}: ${appName}`);
       console.log(`🚀 Generating: ${appName}`);
-
+      const buildId = generateBuildId();
+      console.log("BUILD STARTED:", buildId);
       io.emit("terminal-log", `\n🚀 Generating: ${appName}\n`);
 
       // ADD THIS
       const projectPath = path.join(__dirname, "../template-app");
+      
+      // Check if project path exists
+      if (!fs.existsSync(projectPath)) {
+        io.emit("terminal-log", `\n❌ Project path not found: ${projectPath}\n`);
+        return res.status(500).json({
+          error: "Project path not found",
+        });
+      }
+      
+      // Clean up assets folder before starting to prevent permission errors
+      const androidAssetsPath = path.join(projectPath, "android/app/src/main/assets");
+      if (fs.existsSync(androidAssetsPath)) {
+        try {
+          fs.rmSync(androidAssetsPath, { recursive: true, force: true });
+          io.emit("terminal-log", "✅ Cleaned up old assets folder\n");
+        } catch (err) {
+          io.emit("terminal-log", `⚠️ Could not clean assets folder: ${err.message}\n`);
+        }
+      }
+      
+      // Clean up cordova plugins folder
+      const cordovaPluginsPath = path.join(projectPath, "android/capacitor-cordova-android-plugins");
+      if (fs.existsSync(cordovaPluginsPath)) {
+        try {
+          fs.rmSync(cordovaPluginsPath, { recursive: true, force: true });
+          io.emit("terminal-log", "✅ Cleaned up cordova plugins folder\n");
+        } catch (err) {
+          io.emit("terminal-log", `⚠️ Could not clean cordova plugins: ${err.message}\n`);
+        }
+      }
+      
       for (let i = 1; i <= 10; i++) {
         const key = `slide${i}`;
 
@@ -123,40 +150,53 @@ console.log(`🚀 Generating ${platform}: ${appName}`);
           const uploadedFile = req.files[key][0].path;
 
           // REPLACE SLIDE IMAGE
-
           const slideDestination = path.join(
             projectPath,
             `www/slide${i}/1.jpg`,
           );
+          
+          // Create directory if it doesn't exist
+          const slideDir = path.dirname(slideDestination);
+          if (!fs.existsSync(slideDir)) {
+            fs.mkdirSync(slideDir, { recursive: true });
+          }
 
           fs.copyFileSync(uploadedFile, slideDestination);
 
           // REPLACE THUMB IMAGE
-
           const thumbNumber = String(i).padStart(2, "0");
-
           const thumbDestination = path.join(
             projectPath,
             `www/thumbs/${thumbNumber}.jpg`,
           );
+          
+          // Create directory if it doesn't exist
+          const thumbDir = path.dirname(thumbDestination);
+          if (!fs.existsSync(thumbDir)) {
+            fs.mkdirSync(thumbDir, { recursive: true });
+          }
 
           fs.copyFileSync(uploadedFile, thumbDestination);
 
           console.log(`✅ Replaced slide${i}`);
-
           console.log(`✅ Replaced thumb ${thumbNumber}`);
         }
       }
       console.log("PROJECT PATH:", projectPath);
 
       // =======================
-      // RUN BRAND SCRIPT
+      // RUN BRAND SCRIPT - FIXED ARGUMENT PASSING
       // =======================
-
-      const buildProcess = spawn("npm", ["run", "brand", "--", appName], {
-        cwd: projectPath,
-        shell: true,
-      });
+      
+      // Pass the app name as a single argument without "--"
+      const buildProcess = spawn(
+  "npm",
+  ["run", "brand", appName, platform],
+  {
+    cwd: projectPath,
+    shell: true,
+  }
+);
 
       // =======================
       // BRAND STDOUT
@@ -164,9 +204,7 @@ console.log(`🚀 Generating ${platform}: ${appName}`);
 
       buildProcess.stdout.on("data", (data) => {
         const log = data.toString();
-
         console.log(log);
-
         io.emit("terminal-log", log);
       });
 
@@ -176,9 +214,7 @@ console.log(`🚀 Generating ${platform}: ${appName}`);
 
       buildProcess.stderr.on("data", (data) => {
         const log = data.toString();
-
         console.log(log);
-
         io.emit("terminal-log", log);
       });
 
@@ -189,14 +225,12 @@ console.log(`🚀 Generating ${platform}: ${appName}`);
       buildProcess.on("close", (code) => {
         if (code !== 0) {
           io.emit("terminal-log", "\n❌ Brand Script Failed\n");
-
           return res.status(500).json({
             error: "Brand Script Failed",
           });
         }
 
         console.log("✅ Branding Complete");
-
         io.emit("terminal-log", "\n✅ Branding Complete\n");
 
         // =======================
@@ -208,13 +242,43 @@ console.log(`🚀 Generating ${platform}: ${appName}`);
         let downloadExtension;
 
         if (platform === "android") {
+          const packageName = `com.company.${buildId.toLowerCase()}`;
+
+          const gradlePath = path.join(
+            projectPath,
+            "android/app/build.gradle"
+          );
+
+          let gradleContent = fs.readFileSync(
+            gradlePath,
+            "utf8"
+          );
+
+          gradleContent = gradleContent.replace(
+            /applicationId\s+"[^"]+"/,
+            `applicationId "${packageName}"`
+          );
+          
+          const versionCode = Math.floor(Date.now() / 1000);
+          gradleContent = gradleContent.replace(
+            /versionCode\s+\d+/,
+            `versionCode ${versionCode}`
+          );
+          
+          gradleContent = gradleContent.replace(
+            /versionName\s+"[^"]+"/,
+            `versionName "${buildId}"`
+          );
+          
+          fs.writeFileSync(gradlePath, gradleContent);
+
           buildProcessPlatform = spawn(
             "gradlew",
             ["assembleRelease", "--no-daemon"],
             {
               cwd: path.join(projectPath, "android"),
               shell: true,
-            },
+            }
           );
 
           outputFilePath = path.join(
@@ -230,15 +294,9 @@ console.log(`🚀 Generating ${platform}: ${appName}`);
           });
 
           const iosFolder = path.join(projectPath, "ios");
-
-const zipPath = path.join(
-  projectPath,
-  "ios-build.zip"
-);
-
-outputFilePath = zipPath;
-
-downloadExtension = "zip";
+          const zipPath = path.join(projectPath, "ios-build.zip");
+          outputFilePath = zipPath;
+          downloadExtension = "zip";
         } else {
           return res.status(400).json({
             error: `Unsupported platform: ${platform}`,
@@ -251,9 +309,7 @@ downloadExtension = "zip";
 
         buildProcessPlatform.stdout.on("data", (data) => {
           const log = data.toString();
-
           console.log(log);
-
           io.emit("terminal-log", log);
         });
 
@@ -263,9 +319,7 @@ downloadExtension = "zip";
 
         buildProcessPlatform.stderr.on("data", (data) => {
           const log = data.toString();
-
           console.log(log);
-
           io.emit("terminal-log", log);
         });
 
@@ -275,46 +329,37 @@ downloadExtension = "zip";
 
         buildProcessPlatform.on("close", async (code) => {
           if (code !== 0) {
-            io.emit("terminal-log", "\n❌ APK Build Failed\n");
-
+            io.emit("terminal-log", "\n❌ Build Failed\n");
             return res.status(500).json({
-              error: "APK Build Failed",
+              error: "Build Failed",
             });
           }
 
-          console.log("✅ APK Build Complete");
-
-          io.emit("terminal-log", "\n✅ APK Build Complete\n");
+          console.log("✅ Build Complete");
+          io.emit("terminal-log", "\n✅ Build Complete\n");
 
           if (platform === "ios") {
-  const iosFolder = path.join(projectPath, "ios");
-
-  await zipDirectory(
-    iosFolder,
-    outputFilePath
-  );
-
-  console.log("✅ iOS Project Zipped");
-}
+            const iosFolder = path.join(projectPath, "ios");
+            await zipDirectory(iosFolder, outputFilePath);
+            console.log("✅ iOS Project Zipped");
+          }
 
           // =======================
-          // APK PATH
+          // BUILD OUTPUT PATH
           // =======================
 
           const buildOutputPath = outputFilePath;
-
           console.log("BUILD PATH:", buildOutputPath);
           console.log("EXISTS:", fs.existsSync(buildOutputPath));
 
           // =======================
-          // CHECK APK EXISTS
+          // CHECK FILE EXISTS
           // =======================
 
           if (!fs.existsSync(buildOutputPath)) {
-            io.emit("terminal-log", "\n❌ APK Not Found\n");
-
+            io.emit("terminal-log", "\n❌ Build file not found\n");
             return res.status(500).json({
-              error: "APK Not Found",
+              error: "Build file not found",
             });
           }
 
@@ -322,52 +367,47 @@ downloadExtension = "zip";
           // SAFE FILE NAME
           // =======================
 
-         const buildId = generateBuildId();
+          const safeName = `${appName.replace(/[^a-zA-Z0-9]/g, "_")}_${buildId}`;
+          
+          generatedFiles[safeName] = {
+            buildId,
+            path: buildOutputPath,
+            extension: downloadExtension,
+          };
 
-const safeName =
-  `${appName.replace(/[^a-zA-Z0-9]/g, "_")}_${buildId}`;
+          console.log("BUILD ID:", buildId);
 
-generatedFiles[safeName] = {
-  buildId,
-  path: buildOutputPath,
-  extension: downloadExtension,
-};
-
-console.log("BUILD ID:", buildId);
-
-// DOWNLOAD URL
-const SERVER_IP = "192.168.1.23";
-const downloadUrl =
-  `http://${SERVER_IP}:5000/download/${safeName}.${downloadExtension}`;
+          // DOWNLOAD URL - Make this dynamic or configurable
+          const SERVER_IP = "10.237.148.126"; // Consider moving to environment variable
+          const downloadUrl = `http://${SERVER_IP}:5000/download/${safeName}.${downloadExtension}`;
+          
           console.log({
             success: true,
             downloadUrl,
           });
 
-          io.emit("terminal-log", "\n📦 APK Ready For Download\n");
+          io.emit("terminal-log", "\n📦 File Ready For Download\n");
 
           // =======================
           // SEND RESPONSE
           // =======================
 
           res.json({
-  success: true,
-  buildId,
-  platform,
-  downloadUrl,
-});
+            success: true,
+            buildId,
+            platform,
+            downloadUrl,
+          });
         });
       });
     } catch (err) {
       console.log(err);
-
       io.emit("terminal-log", `\n❌ ${err.message}\n`);
-
       res.status(500).json({
         error: err.message,
       });
     }
-  },
+  }
 );
 
 // =======================
@@ -389,6 +429,7 @@ app.get("/download/:name.:ext", (req, res) => {
     `${req.params.name}.${fileInfo.extension}`
   );
 });
+
 // =======================
 // SOCKET CONNECTION
 // =======================
