@@ -4,11 +4,11 @@ android {
     namespace = "com.harsh.aquaoat"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.company.2m2vn2rm"
+        applicationId "com.company.appuvrtofrh"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1780466429
-        versionName "2M2VN2RM"
+        versionCode 1780470218
+        versionName "UVRTOFRH"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.

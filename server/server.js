@@ -133,15 +133,15 @@ app.post(
       }
       
       // Clean up cordova plugins folder
-      const cordovaPluginsPath = path.join(projectPath, "android/capacitor-cordova-android-plugins");
-      if (fs.existsSync(cordovaPluginsPath)) {
-        try {
-          fs.rmSync(cordovaPluginsPath, { recursive: true, force: true });
-          io.emit("terminal-log", "✅ Cleaned up cordova plugins folder\n");
-        } catch (err) {
-          io.emit("terminal-log", `⚠️ Could not clean cordova plugins: ${err.message}\n`);
-        }
-      }
+      // const cordovaPluginsPath = path.join(projectPath, "android/capacitor-cordova-android-plugins");
+      // if (fs.existsSync(cordovaPluginsPath)) {
+      //   try {
+      //     fs.rmSync(cordovaPluginsPath, { recursive: true, force: true });
+      //     io.emit("terminal-log", "✅ Cleaned up cordova plugins folder\n");
+      //   } catch (err) {
+      //     io.emit("terminal-log", `⚠️ Could not clean cordova plugins: ${err.message}\n`);
+      //   }
+      // }
       
       for (let i = 1; i <= 10; i++) {
         const key = `slide${i}`;
@@ -242,7 +242,7 @@ app.post(
         let downloadExtension;
 
         if (platform === "android") {
-          const packageName = `com.company.${buildId.toLowerCase()}`;
+          const packageName = `com.company.app${buildId.toLowerCase()}`;
 
           const gradlePath = path.join(
             projectPath,
