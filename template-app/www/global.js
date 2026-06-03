@@ -74,11 +74,26 @@ $(document).ready(function () {
     go_nav("f");
   });
 
-  $(".slides").click(function () {
-    var slideNum = $(this).index() + 1;
-    console.log(slideNum);
-    open_page("", slideNum);
-  });
+  $(document).on(
+  "click",
+  ".slides",
+  function () {
+
+    var slideNum =
+      $(this).index() + 1;
+
+    console.log(
+      "Clicked slide:",
+      slideNum
+    );
+
+    open_page(
+      "",
+      slideNum
+    );
+
+  }
+);
 
   $(".reference").removeClass("active");
 
@@ -191,10 +206,12 @@ function go_nav(direction) {
       window.messageHandler.postMessage(JSON.stringify(params));
     }
   } else {
-    if (page_id <= 10) {
+    var last_page_id = $(".slides").length;
+
+if (page_id < last_page_id) {
       page_id = page_id + 1;
       //alert(page_id);
-      if (page_id == 11) {
+      if (page_id == last_page_id + 1) {
         flag = 1;
       }
     } else if (flag == 1) {

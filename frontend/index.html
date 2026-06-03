@@ -5,6 +5,7 @@
 
   <title>APK Generator</title>
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  
   <style>
 
     body {
@@ -90,51 +91,72 @@
     placeholder="Enter App Name"
   />
   <br><br>
-
-<label>Slide 1</label>
-<input type="file" id="slide1">
-
-<br><br>
-
-<label>Slide 2</label>
-<input type="file" id="slide2">
+  <select id="platform">
+  <option value="android">Android</option>
+  <option value="ios">iOS</option>
+</select>
 
 <br><br>
 
-<label>Slide 3</label>
-<input type="file" id="slide3">
+<div id="slideRow1">
+  <label>Slide 1</label>
+  <input type="file" id="slide1">
+</div>
+
+<div id="slideRow2">
+  <label>Slide 2</label>
+  <input type="file" id="slide2">
+</div>
+<div id="slideRow3">
+  <label>Slide 3</label>
+  <input type="file" id="slide3">
+</div>
+<div id="slideRow4">
+  <label>Slide 4</label>
+  <input type="file" id="slide4">
+</div>
+<div id="slideRow5">
+  <label>Slide 5</label>
+  <input type="file" id="slide5">
+</div>
+<div id="slideRow6">
+  <label>Slide 6</label>
+  <input type="file" id="slide6">
+</div>
+<div id="slideRow7">
+  <label>Slide 7</label>
+  <input type="file" id="slide7">
+</div>
+<div id="slideRow8">
+  <label>Slide 8</label>
+  <input type="file" id="slide8">
+</div>
+<div id="slideRow9">
+  <label>Slide 9</label>
+  <input type="file" id="slide9">
+</div>
+<div id="slideRow10">
+  <label>Slide 10</label>
+  <input type="file" id="slide10">
+</div>
+<label>Total Slides</label>
+
+<select id="slideCount">
+
+  <option value="1">1</option>
+  <option value="2">2</option>
+  <option value="3">3</option>
+  <option value="4">4</option>
+  <option value="5">5</option>
+  <option value="6">6</option>
+  <option value="7">7</option>
+  <option value="8">8</option>
+  <option value="9">9</option>
+  <option value="10" selected>10</option>
+
+</select>
 
 <br><br>
-
-<label>Slide 4</label>
-<input type="file" id="slide4">
-
-<br><br>
-
-<label>Slide 5</label>
-<input type="file" id="slide5">
-
-<br><br>
-
-<label>Slide 6</label>
-<input type="file" id="slide6">
-<br><br>
-
-<label>Slide 7</label>
-<input type="file" id="slide7">
-<br><br>
-
-<label>Slide 8</label>
-<input type="file" id="slide8">
-<br><br>
-
-<label>Slide 9</label>
-<input type="file" id="slide9">
-<br><br>
-
-<label>Slide 10</label>
-<input type="file" id="slide10">
-
     <button
   type="button"
   id="generateBtn">
@@ -175,7 +197,15 @@ async function generateApp(event) {
   if (event) {
     event.preventDefault();
   }
+const platform =
+  document.getElementById(
+    "platform"
+  ).value;
 
+const slideCount =
+  document.getElementById(
+    "slideCount"
+  ).value;
   const appName =
     document.getElementById(
       'appName'
@@ -227,13 +257,22 @@ async function generateApp(event) {
       'appName',
       appName
     );
+    formData.append(
+  "platform",
+  platform
+);
+
+formData.append(
+  "slideCount",
+  slideCount
+);
 
     // ADD SLIDE FILES
     for (
-      let i = 1;
-      i <= 10;
-      i++
-    ) {
+  let i = 1;
+  i <= Number(slideCount);
+  i++
+) {
 
       const file =
         document.getElementById(
@@ -253,7 +292,7 @@ async function generateApp(event) {
 
     const response =
       await fetch(
-        'http://localhost:5000/generate',
+        'http://10.237.148.126:5000/generate',
         {
           method: 'POST',
           body: formData
@@ -394,6 +433,54 @@ socket.on(
 
   }
 );
+
+</script>
+<script>
+
+function updateSlides() {
+
+  const count =
+    Number(
+      document.getElementById(
+        "slideCount"
+      ).value
+    );
+
+  for (
+    let i = 1;
+    i <= 10;
+    i++
+  ) {
+
+    const input =
+      document.getElementById(
+        `slide${i}`
+      );
+
+    if (!input) continue;
+
+   const row =
+  document.getElementById(
+    `slideRow${i}`
+  );
+
+  row.style.display =
+  i <= count
+    ? "block"
+    : "none";
+  }
+}
+
+document
+  .getElementById(
+    "slideCount"
+  )
+  .addEventListener(
+    "change",
+    updateSlides
+  );
+
+updateSlides();
 
 </script>
 

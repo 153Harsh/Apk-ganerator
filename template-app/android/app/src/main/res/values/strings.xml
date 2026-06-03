@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">veeva</string>
-    <string name="title_activity_main">veeva</string>
-    <string name="package_name">com.harsh.aquaoat</string>
-    <string name="custom_url_scheme">com.harsh.aquaoat</string>
+    <string name="app_name">adad</string>
+    <string name="title_activity_main">adad</string>
+    <string name="package_name">com.dynamic.app</string>
+    <string name="custom_url_scheme">com.dynamic.app</string>
 </resources>

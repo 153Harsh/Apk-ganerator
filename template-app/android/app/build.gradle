@@ -1,14 +1,14 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "com.harsh.aquaoat"
+    namespace = "com.dynamic.app"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.company.appj2dnecge"
+        applicationId "com.company.app8dnx6iet"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1780472538
-        versionName "J2DNECGE"
+        versionCode 1780487875
+        versionName "8DNX6IET"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -17,23 +17,23 @@ android {
         }
     }
     signingConfigs {
-    release {
-        if (project.hasProperty('MYAPP_UPLOAD_STORE_FILE')) {
-            storeFile file(MYAPP_UPLOAD_STORE_FILE)
-            storePassword MYAPP_UPLOAD_STORE_PASSWORD
-            keyAlias MYAPP_UPLOAD_KEY_ALIAS
-            keyPassword MYAPP_UPLOAD_KEY_PASSWORD
+        release {
+            storeFile file("../release-key.jks")
+            storePassword "Harsh@9987"
+            keyAlias "release"
+            keyPassword "Harsh@9987"
         }
     }
-}
     buildTypes {
-        release {
-    signingConfig signingConfigs.release
-    minifyEnabled false
-    proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
-}
+    release {
+        signingConfig signingConfigs.release
+
+        minifyEnabled false
+
+        proguardFiles getDefaultProguardFile('proguard-android.txt'),
+                      'proguard-rules.pro'
     }
-    
+}
 }
 
 repositories {

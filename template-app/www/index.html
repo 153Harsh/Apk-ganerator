@@ -31,6 +31,39 @@
     <script src="jquery.mobile.custom.min.js"></script>
 
     <script src="jquery.touchSwipe.min.js"></script>
+    <script>
+
+fetch("config.json")
+.then(res => res.json())
+.then(config => {
+
+    const container =
+      document.getElementById(
+        "slide_jumper"
+      );
+
+    for(
+      let i = 1;
+      i <= config.slideCount;
+      i++
+    ){
+
+        const div =
+          document.createElement(
+            "div"
+          );
+
+        div.className =
+          "slides";
+
+        div.innerHTML =
+          `<img src="thumbs/${String(i).padStart(2,"0")}.jpg">`;
+
+        container.appendChild(div);
+    }
+});
+
+</script>
 </head>
 
 <body>
@@ -65,49 +98,10 @@
 
             <div class="box">
 
-                <div class="slide_jumper">
-
-                    <div class="slides">
-                        <img src="thumbs/01.jpg" alt="" />
-                    </div>
-
-                    <div class="slides">
-                        <img src="thumbs/02.jpg" alt="" />
-                    </div>
-
-                    <div class="slides">
-                        <img src="thumbs/03.jpg" alt="" />
-                    </div>
-
-                    <div class="slides">
-                        <img src="thumbs/04.jpg" alt="" />
-                    </div>
-
-                    <div class="slides">
-                        <img src="thumbs/05.jpg" alt="" />
-                    </div>
-
-                    <div class="slides">
-                        <img src="thumbs/06.jpg" alt="" />
-                    </div>
-
-                    <div class="slides">
-                        <img src="thumbs/07.jpg" alt="" />
-                    </div>
-
-                    <div class="slides">
-                        <img src="thumbs/08.jpg" alt="" />
-                    </div>
-
-                    <div class="slides">
-                        <img src="thumbs/09.jpg" alt="" />
-                    </div>
-
-                    <div class="slides">
-                        <img src="thumbs/10.jpg" alt="" />
-                    </div>
-
-                </div>
+                <div
+  class="slide_jumper"
+  id="slide_jumper"
+></div>
 
             </div>
 
@@ -180,54 +174,50 @@
         // PRELOAD ALL IMAGES
         // =========================
 
-        function preloadAllImages() {
+        function preloadAllImages(slideCount) {
 
-            const imagePaths = [];
+    const imagePaths = [];
 
-            // PRELOAD SLIDES
-            for (let i = 1; i <= 10; i++) {
+    for (let i = 1; i <= slideCount; i++) {
 
-                // slide1/1.jpg
-                imagePaths.push(
-    `slide${i}/1.jpg`
-);
+        imagePaths.push(`slide${i}/1.jpg`);
 
-                // thumbs/01.jpg
-                imagePaths.push(
-                    `thumbs/${String(i).padStart(2, '0')}.jpg`
-                );
-            }
-
-            // PRELOAD UI IMAGES
-            imagePaths.push(
-                "left_arrow.png",
-                "right_arrow.png",
-                "open.png",
-                "close.png",
-                "menu.png"
-            );
-
-            // LOAD IMAGES
-            imagePaths.forEach((src) => {
-                const img = new Image();
-
-                // Avoid flicker/black flash during image swaps by ensuring the browser
-                // reserves the decoded pixels.
-                img.decoding = "async";
-
-                // Start download immediately
-                img.src = src;
-            });
-
-            console.log(
-                "All images preloaded"
-            );
-        }
-
-        window.addEventListener(
-            "load",
-            preloadAllImages
+        imagePaths.push(
+            `thumbs/${String(i).padStart(2, '0')}.jpg`
         );
+    }
+
+    imagePaths.push(
+        "left_arrow.png",
+        "right_arrow.png",
+        "open.png",
+        "close.png",
+        "menu.png"
+    );
+
+    imagePaths.forEach((src) => {
+
+        const img = new Image();
+
+        img.decoding = "async";
+
+        img.src = src;
+    });
+
+    console.log(
+        `Preloaded ${slideCount} slides`
+    );
+}
+fetch("config.json")
+.then(res => res.json())
+.then(config => {
+
+    preloadAllImages(
+        config.slideCount
+    );
+
+});
+        
 
 
 
