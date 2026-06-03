@@ -133,10 +133,57 @@ app.post(
       io.emit("terminal-log", `\n🚀 Generating: ${appName}\n`);
 
       // ADD THIS
-      const projectPath = path.join(__dirname, "../template-app");
-      const slideCount =
-  Number(req.body.slideCount || 10);
+      const templatePath = path.join(
+  __dirname,
+  "../template-app"
+);
 
+const buildPath = path.join(
+  __dirname,
+  "../builds",
+  buildId
+);
+const projectPath = buildPath;
+      
+if (!fs.existsSync(templatePath)) {
+  return res.status(500).json({
+    error: "Template not found",
+  });
+}
+
+      // Clean up assets folder before starting to prevent permission errors
+      
+
+      // Clean up cordova plugins folder
+      // const cordovaPluginsPath = path.join(projectPath, "android/capacitor-cordova-android-plugins");
+      // if (fs.existsSync(cordovaPluginsPath)) {
+      //   try {
+      //     fs.rmSync(cordovaPluginsPath, { recursive: true, force: true });
+      //     io.emit("terminal-log", "✅ Cleaned up cordova plugins folder\n");
+      //   } catch (err) {
+      //     io.emit("terminal-log", `⚠️ Could not clean cordova plugins: ${err.message}\n`);
+      //   }
+      // }
+if (fs.existsSync(buildPath)) {
+  fs.rmSync(buildPath, {
+    recursive: true,
+    force: true,
+  });
+}
+
+fs.cpSync(
+  templatePath,
+  buildPath,
+  {
+    recursive: true,
+  }
+);
+const slideCount =
+  Number(req.body.slideCount || 10);
+const configPath = path.join(
+  projectPath,
+  "www/config.json"
+);
 fs.writeFileSync(
   path.join(
     projectPath,
@@ -151,38 +198,7 @@ fs.writeFileSync(
   )
 );
 console.log("SLIDE COUNT =", slideCount);
-
-const configPath = path.join(
-  projectPath,
-  "www/config.json"
-);
-
-console.log("CONFIG PATH =", configPath);
-
-fs.writeFileSync(
-  configPath,
-  JSON.stringify(
-    { slideCount },
-    null,
-    2
-  )
-);
-
-console.log("CONFIG CREATED");
-
-      // Check if project path exists
-      if (!fs.existsSync(projectPath)) {
-        io.emit(
-          "terminal-log",
-          `\n❌ Project path not found: ${projectPath}\n`,
-        );
-        return res.status(500).json({
-          error: "Project path not found",
-        });
-      }
-
-      // Clean up assets folder before starting to prevent permission errors
-      const androidAssetsPath = path.join(
+const androidAssetsPath = path.join(
         projectPath,
         "android/app/src/main/assets",
       );
@@ -197,17 +213,6 @@ console.log("CONFIG CREATED");
           );
         }
       }
-
-      // Clean up cordova plugins folder
-      // const cordovaPluginsPath = path.join(projectPath, "android/capacitor-cordova-android-plugins");
-      // if (fs.existsSync(cordovaPluginsPath)) {
-      //   try {
-      //     fs.rmSync(cordovaPluginsPath, { recursive: true, force: true });
-      //     io.emit("terminal-log", "✅ Cleaned up cordova plugins folder\n");
-      //   } catch (err) {
-      //     io.emit("terminal-log", `⚠️ Could not clean cordova plugins: ${err.message}\n`);
-      //   }
-      // }
 
       for (let i = 1; i <= 10; i++) {
         const key = `slide${i}`;
@@ -454,6 +459,21 @@ console.log("CONFIG CREATED");
             platform,
             downloadUrl,
           });
+          setTimeout(() => {
+  try {
+    fs.rmSync(projectPath, {
+      recursive: true,
+      force: true,
+    });
+
+    console.log(`Deleted build ${buildId}`);
+  } catch (err) {
+    console.error(
+      `Failed to delete build ${buildId}:`,
+      err
+    );
+  }
+}, 60 * 60 * 1000);
         });
       });
     } catch (err) {
