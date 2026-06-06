@@ -294,27 +294,9 @@ function changeSlide(page_id) {
 
     currentSlide();
 
-    const imgPath =
-        `slide${page_id}/1.jpg`;
+    const content = set_pg_content(page_id);
 
-    const cssPath =
-        `slide${page_id}/slide${page_id}.css`;
-
-    const preImg = new Image();
-
-    preImg.onload = function () {
-
-        // CHANGE ONLY IMAGE SRC
-        $("#main_slide_img")
-            .attr("src", imgPath);
-
-        // CHANGE CSS FILE
-        $("#dynamic_slide_css")
-            .attr("href", cssPath);
-
-    };
-
-    preImg.src = imgPath;
+    $("#main_content").html(content);
 }
 function set_pg_content(pg_id) {
   $(".reference").removeClass("active");

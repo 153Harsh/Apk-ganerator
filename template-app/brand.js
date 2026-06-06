@@ -1,3 +1,6 @@
+console.log("==========");
+console.log("FILE:", __filename);
+console.log("ARGV:", process.argv);
 const { execSync } = require('child_process');
 const { createCanvas } = require('canvas');
 const fs = require('fs');
@@ -6,14 +9,19 @@ const fs = require('fs');
 // ========================
 // GET APP NAME
 // ========================
+const platform =
+  process.argv[
+    process.argv.length - 1
+  ]?.toLowerCase();
 
 const appName =
-  process.argv[2] || 'AquaOat';
+  process.argv
+    .slice(2, -1)
+    .join(" ");
 
-const platform =
-  process.argv[3]?.toLowerCase();
-
-
+console.log("APP:", appName);
+console.log("PLATFORM:", platform);
+console.log("==========");
 // ========================
 // PLATFORM CHECK
 // ========================
@@ -194,63 +202,117 @@ if (platform === "android") {
 
   // UPDATE ANDROID NAME
 
-  const stringsPath =
-    'android/app/src/main/res/values/strings.xml';
 
-  if (
-    fs.existsSync(stringsPath)
-  ) {
-
-    let strings =
-      fs.readFileSync(
-        stringsPath,
-        'utf8'
-      );
-
-    // app_name
-    strings =
-      strings.replace(
-        /<string name="app_name">.*?<\/string>/,
-        `<string name="app_name">${appName}</string>`
-      );
-
-    // title_activity_main
-    strings =
-      strings.replace(
-        /<string name="title_activity_main">.*?<\/string>/,
-        `<string name="title_activity_main">${appName}</string>`
-      );
-
-    fs.writeFileSync(
-      stringsPath,
-      strings
+  // GENERATE ICONS (optional)
+  try {
+    execSync(
+      'npx capacitor-assets generate --android',
+      {
+        stdio: 'inherit',
+        shell: true
+      }
     );
-
-    console.log(
-      '✅ Android App Name Updated'
+  } catch (err) {
+    console.warn(
+      '⚠️ capacitor-assets generate failed (continuing branding):',
+      err?.message || err
     );
   }
 
+  // SYNC FIRST (optional)
+  try {
+    execSync(
+      'npx cap sync android',
+      {
+        stdio: 'inherit',
+        shell: true
+      }
+    );
+  } catch (err) {
+    console.warn(
+      '⚠️ cap sync android failed (continuing branding):',
+      err?.message || err
+    );
+  }
 
-  // GENERATE ANDROID ICONS
-  execSync(
-    'npx capacitor-assets generate --android',
-    {
-      stdio: 'inherit',
-      shell: true
-    }
+  // NOW UPDATE strings.xml
+  const stringsPath =
+    'android/app/src/main/res/values/strings.xml';
+
+  // Some flows may run this script from a different folder; resolve relative paths.
+  const resolvedStringsPath =
+    fs.existsSync(stringsPath)
+      ? stringsPath
+      : `template-app/${stringsPath}`;
+
+  // UPDATE AndroidManifest.xml
+  const manifestPath =
+    'android/app/src/main/AndroidManifest.xml';
+
+  if (fs.existsSync(manifestPath)) {
+
+    let manifest =
+      fs.readFileSync(
+        manifestPath,
+        'utf8'
+      );
+
+    manifest = manifest.replace(
+      /android:label="[^"]*"/,
+      'android:label="@string/app_name"'
+    );
+
+    fs.writeFileSync(
+      manifestPath,
+      manifest
+    );
+
+    console.log(
+      '✅ AndroidManifest Updated'
+    );
+  }
+
+  // ADD DEBUG LOGS BEFORE CLEAN
+  // UPDATE strings.xml (app_name)
+  if (fs.existsSync(resolvedStringsPath)) {
+    let stringsXml = fs.readFileSync(resolvedStringsPath, 'utf8');
+
+    // Replace <string name="app_name">...</string>
+    stringsXml = stringsXml.replace(
+      /<string\s+name="app_name">[\s\S]*?<\/string>/,
+      `<string name="app_name">${appName}</string>`
+    );
+
+    // Replace title_activity_main too (optional, same template style)
+    stringsXml = stringsXml.replace(
+      /<string\s+name="title_activity_main">[\s\S]*?<\/string>/,
+      `<string name="title_activity_main">${appName}</string>`
+    );
+
+    fs.writeFileSync(resolvedStringsPath, stringsXml);
+  }
+
+  console.log(
+    "===== STRINGS.XML ====="
   );
 
-
-  // SYNC ANDROID
-  execSync(
-    'npx cap sync android',
-    {
-      stdio: 'inherit',
-      shell: true
-    }
+  console.log(
+    fs.readFileSync(
+      resolvedStringsPath,
+      'utf8'
+    )
   );
 
+  console.log(
+    "===== MANIFEST ====="
+  );
+
+  console.log(
+    fs.readFileSync(
+      'android/app/src/main/AndroidManifest.xml',
+      'utf8'
+    )
+  );
 
   // CLEAN ANDROID
   execSync(
@@ -270,15 +332,57 @@ if (platform === "android") {
 // ========================
 // MAC → IOS ONLY
 // ========================
-
 if (platform === "ios") {
 
   console.log(
     '🍎 MAC DETECTED'
   );
 
-  // UPDATE IOS APP NAME
 
+
+  const buildNumber =
+    process.env.BUILD_ID ||
+    Date.now().toString();
+  
+  const bundleId =
+  `com.company.${buildNumber.toLowerCase()}`;
+
+  const versionName =
+    `1.0.${buildNumber.slice(-4)}`;
+  const configJsPath =
+    'capacitor.config.js';
+
+  let configJs =
+    fs.readFileSync(
+      configJsPath,
+      'utf8'
+    );
+
+  configJs = configJs.replace(
+    /appId:\s*['"][^'"]+['"]/,
+    `appId: '${bundleId}'`
+  );
+
+  configJs = configJs.replace(
+    /appName:\s*['"][^'"]+['"]/,
+    `appName: '${appName}'`
+  );
+
+  fs.writeFileSync(
+    configJsPath,
+    configJs
+  );
+
+  console.log(
+    `✅ Updated App ID: ${bundleId}`
+  );
+
+  console.log(
+    fs.readFileSync(
+      configJsPath,
+      'utf8'
+    )
+  );
   const iosPath =
     'ios/App/App/Info.plist';
 
@@ -308,16 +412,39 @@ if (platform === "ios") {
 <string>${appName}</string>`
       );
 
+    // BUILD VERSION
+    plist =
+      plist.replace(
+        /<key>CFBundleVersion<\/key>\s*<string>.*?<\/string>/,
+        `<key>CFBundleVersion</key>
+<string>${buildNumber}</string>`
+      );
+
+    // APP VERSION
+    plist =
+      plist.replace(
+        /<key>CFBundleShortVersionString<\/key>\s*<string>.*?<\/string>/,
+        `<key>CFBundleShortVersionString</key>
+<string>${versionName}</string>`
+      );
+
     fs.writeFileSync(
       iosPath,
       plist
     );
 
     console.log(
-      '✅ iOS App Name Updated'
+      `✅ iOS App Name Updated: ${appName}`
+    );
+
+    console.log(
+      `✅ iOS Version Updated: ${versionName}`
+    );
+
+    console.log(
+      `✅ iOS Build Number Updated: ${buildNumber}`
     );
   }
-
 
   // GENERATE IOS ICONS
   execSync(
@@ -327,8 +454,35 @@ if (platform === "ios") {
       shell: true
     }
   );
+console.log(
+  "BUNDLE ID =",
+  bundleId
+);
+const pbxprojPath =
+  'ios/App/App.xcodeproj/project.pbxproj';
 
+if (fs.existsSync(pbxprojPath)) {
 
+  let pbxproj =
+    fs.readFileSync(
+      pbxprojPath,
+      'utf8'
+    );
+
+  pbxproj = pbxproj.replace(
+    /PRODUCT_BUNDLE_IDENTIFIER = [^;]+;/g,
+    `PRODUCT_BUNDLE_IDENTIFIER = ${bundleId};`
+  );
+
+  fs.writeFileSync(
+    pbxprojPath,
+    pbxproj
+  );
+
+  console.log(
+    `✅ Bundle ID Updated: ${bundleId}`
+  );
+}
   // SYNC IOS
   execSync(
     'npx cap sync ios',

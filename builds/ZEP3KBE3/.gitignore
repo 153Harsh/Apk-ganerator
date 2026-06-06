@@ -1,6 +1,0 @@
-node_modules/
-.vscode/
-android/app/build/
-dist/
-build/
-.gradle/

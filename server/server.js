@@ -13,7 +13,11 @@ function generateBuildId() {
   return Math.random().toString(36).substring(2, 10).toUpperCase();
 }
 
-function zipIOSProject(projectPath, outPath) {
+function zipIOSProject(
+  projectPath,
+  outPath,
+  changedSlides = []
+) {
   return new Promise((resolve, reject) => {
     const output = fs.createWriteStream(outPath);
 
@@ -28,7 +32,56 @@ function zipIOSProject(projectPath, outPath) {
 
     // ios folder
     archive.directory(path.join(projectPath, "ios"), "ios");
-    archive.directory(path.join(projectPath, "www"), "www");
+    const wwwPath = path.join(projectPath, "www");
+
+// Add all files/folders except slide* and thumbs
+fs.readdirSync(wwwPath).forEach((item) => {
+  const fullPath = path.join(wwwPath, item);
+  const stat = fs.statSync(fullPath);
+
+  // Skip slides and thumbs
+  if (
+    item.startsWith("slide") ||
+    item === "thumbs"
+  ) {
+    return;
+  }
+
+  if (stat.isDirectory()) {
+    archive.directory(fullPath, `www/${item}`);
+  } else {
+    archive.file(fullPath, {
+      name: `www/${item}`,
+    });
+  }
+});
+
+// Add only modified slides
+changedSlides.forEach((slideNo) => {
+  const slideFolder = path.join(
+    projectPath,
+    `www/slide${slideNo}`
+  );
+
+  if (fs.existsSync(slideFolder)) {
+    archive.directory(
+      slideFolder,
+      `www/slide${slideNo}`
+    );
+  }
+
+  const thumbNo = String(slideNo).padStart(2, "0");
+  const thumbFile = path.join(
+    projectPath,
+    `www/thumbs/${thumbNo}.jpg`
+  );
+
+  if (fs.existsSync(thumbFile)) {
+    archive.file(thumbFile, {
+      name: `www/thumbs/${thumbNo}.jpg`,
+    });
+  }
+});
 
     // package.json
     const packageJson = path.join(projectPath, "package.json");
@@ -64,7 +117,6 @@ function zipIOSProject(projectPath, outPath) {
 const generatedFiles = {};
 const path = require("path");
 const fs = require("fs");
-
 const app = express();
 
 const http = require("http").createServer(app);
@@ -110,6 +162,7 @@ app.post(
     { name: "slide10", maxCount: 1 },
   ]),
   async (req, res) => {
+    const changedSlides = [];
     console.log("REQUEST RECEIVED", new Date().toISOString());
     try {
       const appName = req.body.appName?.trim();
@@ -218,6 +271,7 @@ const androidAssetsPath = path.join(
         const key = `slide${i}`;
 
         if (req.files[key]) {
+          changedSlides.push(i);
           const uploadedFile = req.files[key][0].path;
 
           // REPLACE SLIDE IMAGE
@@ -253,6 +307,7 @@ const androidAssetsPath = path.join(
           console.log(`✅ Replaced thumb ${thumbNumber}`);
         }
       }
+     console.log("Changed Slides:", changedSlides);
       console.log("PROJECT PATH:", projectPath);
 
       // =======================
@@ -260,10 +315,20 @@ const androidAssetsPath = path.join(
       // =======================
 
       // Pass the app name as a single argument without "--"
-      const buildProcess = spawn("npm", ["run", "brand", appName, platform], {
-        cwd: projectPath,
-        shell: true,
-      });
+      const buildProcess = spawn(
+  "npm",
+  ["run", "brand", "--", appName, platform],
+  {
+    cwd: projectPath,
+    shell: true,
+    env: {
+      ...process.env,
+      BUILD_ID: buildId,
+    },
+  }
+);
+console.log("APP =", appName);
+console.log("PLATFORM =", platform);
 
       // =======================
       // BRAND STDOUT
@@ -299,7 +364,40 @@ const androidAssetsPath = path.join(
 
         console.log("✅ Branding Complete");
         io.emit("terminal-log", "\n✅ Branding Complete\n");
+         for (let i = 1; i <= 10; i++) {
 
+  if (!changedSlides.includes(i)) {
+
+    const slideFolder = path.join(
+      projectPath,
+      `www/slide${i}`
+    );
+
+    if (fs.existsSync(slideFolder)) {
+      fs.rmSync(slideFolder, {
+        recursive: true,
+        force: true,
+      });
+
+      console.log(
+        `🗑 Deleted slide${i}`
+      );
+    }
+
+    const thumbFile = path.join(
+      projectPath,
+      `www/thumbs/${String(i).padStart(2, "0")}.jpg`
+    );
+
+    if (fs.existsSync(thumbFile)) {
+      fs.unlinkSync(thumbFile);
+
+      console.log(
+        `🗑 Deleted thumb ${String(i).padStart(2, "0")}`
+      );
+    }
+  }
+}
         // =======================
         // BUILD RELEASE APK
         // =======================
@@ -332,7 +430,12 @@ const androidAssetsPath = path.join(
           );
 
           fs.writeFileSync(gradlePath, gradleContent);
-
+          console.log(
+  "Slides before build:",
+  fs.readdirSync(
+    path.join(projectPath, "www")
+  )
+);
           buildProcessPlatform = spawn(
             "gradlew",
             ["assembleRelease", "--no-daemon"],
@@ -349,16 +452,24 @@ const androidAssetsPath = path.join(
 
           downloadExtension = "apk";
         } else if (platform === "ios") {
-          buildProcessPlatform = spawn("npx", ["cap", "sync", "ios"], {
-            cwd: projectPath,
-            shell: true,
-          });
 
-          const iosFolder = path.join(projectPath, "ios");
-          const zipPath = path.join(projectPath, "ios-build.zip");
-          outputFilePath = zipPath;
-          downloadExtension = "zip";
-        } else {
+  buildProcessPlatform = spawn(
+    "npx",
+    ["cap", "sync", "ios"],
+    {
+      cwd: projectPath,
+      shell: true,
+    }
+  );
+
+  const zipPath = path.join(
+    projectPath,
+    "ios-build.zip"
+  );
+
+  outputFilePath = zipPath;
+  downloadExtension = "zip";
+} else {
           return res.status(400).json({
             error: `Unsupported platform: ${platform}`,
           });
@@ -400,7 +511,7 @@ const androidAssetsPath = path.join(
           io.emit("terminal-log", "\n✅ Build Complete\n");
 
           if (platform === "ios") {
-            await zipIOSProject(projectPath, outputFilePath);
+            await zipIOSProject(projectPath, outputFilePath,changedSlides);
 
             console.log("✅ iOS Project + Config Files Zipped");
           }

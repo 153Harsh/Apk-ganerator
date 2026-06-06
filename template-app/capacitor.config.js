@@ -1,4 +1,3 @@
-
 const config = {
   appId: 'com.dynamic.app',
   appName: 'Quiz Flex',
